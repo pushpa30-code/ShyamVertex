@@ -54,9 +54,9 @@ connection.connect((err) => {
 
                     // Add columns if they don't exist (for existing tables)
                     const alterQueries = [
-                        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS skills TEXT",
-                        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS resume_path VARCHAR(255)",
-                        "ALTER TABLE applications ADD COLUMN IF NOT EXISTS portfolio VARCHAR(255)"
+                        "ALTER TABLE applications ADD COLUMN skills TEXT",
+                        "ALTER TABLE applications ADD COLUMN resume_path VARCHAR(255)",
+                        "ALTER TABLE applications ADD COLUMN portfolio VARCHAR(255)"
                     ];
 
                     alterQueries.forEach(query => {
