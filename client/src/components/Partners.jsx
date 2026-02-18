@@ -8,11 +8,11 @@ import badaBuilderLogo from '../images/bada builder logo.jpeg';
 
 const Partners = () => {
     const partners = [
-        { name: 'Ambitious Corporation', logo: ambitiousLogo },
-        { name: 'Axiom Hitech', logo: axiomLogo },
-        { name: 'Bada Builder', logo: badaBuilderLogo },
-        { name: 'Gramfs', logo: null },
-        { name: 'VVA Infras', logo: null },
+        { name: 'Ambitious Corporation', logo: ambitiousLogo, url: 'https://ambitiouscorporation.in' },
+        { name: 'Axiom Hitech', logo: axiomLogo, url: 'https://platekhata.in' },
+        { name: 'Bada Builder', logo: badaBuilderLogo, url: 'https://badabuilder.com' },
+        { name: 'Gramfs', logo: null, url: 'https://gramfs.com' },
+        { name: 'VVA Infras', logo: null, url: 'https://vvainfras.com' },
     ];
 
     // Duplicate logic for seamless loop
@@ -39,22 +39,25 @@ const Partners = () => {
                     }}
                 >
                     {marqueeItems.map((partner, index) => (
-                        <div
+                        <a
                             key={`${partner.name}-${index}`}
-                            className="flex flex-col items-center justify-center min-w-[150px] opacity-80 hover:opacity-100 transition-opacity duration-300"
+                            href={partner.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex flex-col items-center justify-center min-w-[150px] opacity-80 hover:opacity-100 transition-opacity duration-300 group"
                         >
                             {partner.logo ? (
                                 <img
                                     src={partner.logo}
                                     alt={partner.name}
-                                    className="h-12 md:h-16 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                                    className="h-12 md:h-16 w-auto object-contain filter grayscale group-hover:grayscale-0 transition-all duration-300"
                                 />
                             ) : (
-                                <span className="text-xl md:text-2xl font-bold text-gray-600 font-serif tracking-tight">
+                                <span className="text-xl md:text-2xl font-bold text-gray-600 font-serif tracking-tight group-hover:text-primary transition-colors">
                                     {partner.name}
                                 </span>
                             )}
-                        </div>
+                        </a>
                     ))}
                 </motion.div>
 

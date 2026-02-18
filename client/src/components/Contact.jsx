@@ -64,7 +64,9 @@ const Contact = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-primary">Email Us</h4>
-                                    <p className="text-gray-600">shyamvertexpvt@gmail.com</p>
+                                    <a href="mailto:shyamvertexpvt@gmail.com" className="text-gray-600 hover:text-secondary transition-colors">
+                                        shyamvertexpvt@gmail.com
+                                    </a>
                                 </div>
                             </div>
 
@@ -74,7 +76,11 @@ const Contact = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-primary">Call Us</h4>
-                                    <p className="text-gray-600">+91 8799303431/9136462029</p>
+                                    <p className="text-gray-600">
+                                        <a href="tel:+918799303431" className="hover:text-secondary transition-colors">+91 8799303431</a>
+                                        {' / '}
+                                        <a href="tel:+919136462029" className="hover:text-secondary transition-colors">+91 9136462029</a>
+                                    </p>
                                 </div>
                             </div>
 
@@ -84,7 +90,14 @@ const Contact = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-semibold text-primary">Visit Us</h4>
-                                    <p className="text-gray-600">Vadodara,Gujarat-390019</p>
+                                    <a
+                                        href="https://www.google.com/maps/search/?api=1&query=Vadodara+Gujarat+390019"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-gray-600 hover:text-secondary transition-colors"
+                                    >
+                                        Vadodara, Gujarat-390019
+                                    </a>
                                 </div>
                             </div>
                         </div>

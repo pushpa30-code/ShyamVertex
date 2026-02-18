@@ -1,32 +1,7 @@
 import React from 'react';
 import { ArrowRight, Calendar, User } from 'lucide-react';
-
-const blogPosts = [
-    {
-        id: 1,
-        title: 'The Future of AI in Web Development',
-        excerpt: 'How artificial intelligence is reshaping the way we build and interact with websites.',
-        date: 'Oct 15, 2023',
-        author: 'Admin',
-        image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&q=80&w=500',
-    },
-    {
-        id: 2,
-        title: 'Why UI/UX Design Matters for SEO',
-        excerpt: 'Explaining the critical link between user experience and search engine rankings.',
-        date: 'Sep 28, 2023',
-        author: 'Jane Doe',
-        image: 'https://images.unsplash.com/photo-1586717791821-3f44a5638d4f?auto=format&fit=crop&q=80&w=500',
-    },
-    {
-        id: 3,
-        title: 'Migrating to the Cloud: A Beginners Guide',
-        excerpt: 'Key considerations and steps for businesses looking to move their infrastructure to the cloud.',
-        date: 'Sep 10, 2023',
-        author: 'John Smith',
-        image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=500',
-    },
-];
+import { blogPosts } from '../data/blogPosts';
+import { Link } from 'react-router-dom';
 
 const Blog = () => {
     return (
@@ -55,9 +30,9 @@ const Blog = () => {
                                 <p className="text-gray-600 mb-4 line-clamp-3">
                                     {post.excerpt}
                                 </p>
-                                <a href={`/blog/${post.id}`} className="inline-flex items-center text-secondary font-semibold hover:underline">
+                                <Link to={`/blog/${post.id}`} className="inline-flex items-center text-secondary font-semibold hover:underline">
                                     Read More <ArrowRight className="h-4 w-4 ml-1" />
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     ))}
