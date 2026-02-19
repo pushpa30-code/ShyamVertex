@@ -141,6 +141,38 @@ app.post('/api/contact', (req, res) => {
     });
 });
 
+// --- Job Settings API ---
+
+// Get all job statuses
+app.get('/api/jobs', (req, res) => {
+    const query = 'SELECT * FROM job_settings';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching job settings:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+        res.json(results);
+    });
+});
+
+// Update job status (Admin)
+app.post('/api/jobs/update', (req, res) => {
+    const { role_id, is_hiring } = req.body;
+
+    if (!role_id || is_hiring === undefined) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const query = 'UPDATE job_settings SET is_hiring = ? WHERE role_id = ?';
+    db.query(query, [is_hiring, role_id], (err, result) => {
+        if (err) {
+            console.error('Error updating job status:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+        res.json({ message: 'Job status updated successfully' });
+    });
+});
+
 // Application Submission Route
 app.post('/api/apply', upload.single('resume'), (req, res) => {
     const { name, mobile, email, experience, projects, role, skills, portfolio } = req.body;

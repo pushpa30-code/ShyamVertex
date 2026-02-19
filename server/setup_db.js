@@ -103,8 +103,47 @@ connection.connect((err) => {
                             console.log('Table "services" created or already exists.');
                         }
 
-                        console.log('Database setup complete!');
-                        connection.end();
+                        // Create job_settings table
+                        const createJobSettingsTable = `
+                            CREATE TABLE IF NOT EXISTS job_settings (
+                                role_id VARCHAR(50) PRIMARY KEY,
+                                is_hiring BOOLEAN DEFAULT TRUE,
+                                label VARCHAR(100)
+                            )
+                        `;
+
+                        connection.query(createJobSettingsTable, (err) => {
+                            if (err) {
+                                console.error('Error creating job_settings table:', err.message);
+                                connection.end();
+                            } else {
+                                console.log('Table "job_settings" created or already exists.');
+
+                                // Insert default values if they don't exist
+                                const defaultJobs = [
+                                    { role_id: 'fulltime', label: 'Full-time' },
+                                    { role_id: 'internship', label: 'Internship' },
+                                    { role_id: 'freelance', label: 'Freelance' }
+                                ];
+
+                                let completed = 0;
+                                defaultJobs.forEach(job => {
+                                    const insertQuery = `
+                                        INSERT IGNORE INTO job_settings (role_id, is_hiring, label)
+                                        VALUES (?, TRUE, ?)
+                                    `;
+                                    connection.query(insertQuery, [job.role_id, job.label], (err) => {
+                                        if (err) console.error(`Error inserting default job ${job.role_id}:`, err.message);
+
+                                        completed++;
+                                        if (completed === defaultJobs.length) {
+                                            console.log('Database setup completed successfully.');
+                                            connection.end();
+                                        }
+                                    });
+                                });
+                            }
+                        });
                     });
                 });
             });
