@@ -34,6 +34,14 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads')); // Serve uploaded files
 
+// Track DB connection status
+let dbConnected = false;
+let mockJobSettings = [
+    { role_id: 'fulltime', is_hiring: true, label: 'Full-time' },
+    { role_id: 'internship', is_hiring: true, label: 'Internship' },
+    { role_id: 'freelance', is_hiring: true, label: 'Freelance' }
+];
+
 // Database Connection
 const db = mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
@@ -44,15 +52,15 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
-        console.error('Database connection failed:', err.stack);
+        console.error('Database connection failed:', err.message);
         console.log('---------------------------------------------------');
-        console.log('ACTION REQUIRED: Please ensure your MySQL server is RUNNING.');
-        console.log('If using XAMPP, open Control Panel and start "MySQL".');
+        console.log('Using IN-MEMORY STORAGE (Fallback Mode).');
         console.log('---------------------------------------------------');
-        console.log('Running without database connection for now.');
+        dbConnected = false;
         return;
     }
     console.log('Connected to MySQL database.');
+    dbConnected = true;
 });
 
 // Email Transporter Configuration
@@ -145,6 +153,10 @@ app.post('/api/contact', (req, res) => {
 
 // Get all job statuses
 app.get('/api/jobs', (req, res) => {
+    if (!dbConnected) {
+        console.log('Serving jobs from memory (Fallback)');
+        return res.json(mockJobSettings);
+    }
     const query = 'SELECT * FROM job_settings';
     db.query(query, (err, results) => {
         if (err) {
@@ -161,6 +173,14 @@ app.post('/api/jobs/update', (req, res) => {
 
     if (!role_id || is_hiring === undefined) {
         return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    if (!dbConnected) {
+        console.log(`Updating job status in memory (Fallback): ${role_id} -> ${is_hiring}`);
+        mockJobSettings = mockJobSettings.map(job =>
+            job.role_id === role_id ? { ...job, is_hiring } : job
+        );
+        return res.json({ message: 'Job status updated successfully (In-Memory)' });
     }
 
     const query = 'UPDATE job_settings SET is_hiring = ? WHERE role_id = ?';
