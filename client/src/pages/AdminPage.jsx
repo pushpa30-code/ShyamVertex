@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, Check, X, LogIn } from 'lucide-react';
 
+import API_URL from '../config';
+
 const AdminPage = () => {
     const [jobStatuses, setJobStatuses] = useState([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -15,7 +17,7 @@ const AdminPage = () => {
     }, []);
 
     const fetchJobs = () => {
-        fetch('http://localhost:5000/api/jobs')
+        fetch(`${API_URL}/api/jobs`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
@@ -49,7 +51,7 @@ const AdminPage = () => {
             job.role_id === role_id ? { ...job, is_hiring: newStatus } : job
         ));
 
-        fetch('http://localhost:5000/api/jobs/update', {
+        fetch(`${API_URL}/api/jobs/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ role_id, is_hiring: newStatus })

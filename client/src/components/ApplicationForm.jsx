@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload } from 'lucide-react';
 
+import API_URL from '../config';
+
 const ApplicationForm = ({ isOpen, onClose, distinctRole }) => {
     const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
@@ -53,7 +55,7 @@ const ApplicationForm = ({ isOpen, onClose, distinctRole }) => {
         }
 
         try {
-            const response = await fetch('http://localhost:5000/api/apply', {
+            const response = await fetch(`${API_URL}/api/apply`, {
                 method: 'POST',
                 body: data,
             });

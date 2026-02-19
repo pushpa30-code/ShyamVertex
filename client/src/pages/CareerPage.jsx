@@ -4,13 +4,15 @@ import { Briefcase, Clock, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ApplicationForm from '../components/ApplicationForm';
 
+import API_URL from '../config';
+
 const CareerPage = () => {
     const [selectedRole, setSelectedRole] = useState(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [jobStatuses, setJobStatuses] = useState({});
 
     useEffect(() => {
-        fetch('http://localhost:5000/api/jobs')
+        fetch(`${API_URL}/api/jobs`)
             .then(res => res.json())
             .then(data => {
                 if (Array.isArray(data)) {
