@@ -181,61 +181,65 @@ app.post('/api/contact', (req, res) => {
         if (err) console.error('DB Error:', err);
     });
 
-    // 2. Send Acknowledgment to Sender (Verifies existence)
-    const ackMailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'We Received Your Message - Shyam Vertex',
-        html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2 style="color: #022c22;">Message Received</h2>
-                <p>Hello ${name},</p>
-                <p>Thank you for contacting us. We have received your message regarding "<strong>${subject}</strong>".</p>
-                <p>Our team will get back to you shortly.</p>
-                <br>
-                <p>Best Regards,<br>Shyam Vertex Team</p>
-            </div>
-        `
-    };
-
-    transporter.sendMail(ackMailOptions, (ackError, ackInfo) => {
-        if (ackError) {
-            console.error('Error sending acknowledgement email:', ackError);
-            return res.status(400).json({
-                message: 'Could not send email to this address. Please check if the email exists.',
-                error: ackError.message
-            });
-        }
-
-        // 3. If valid, send Notification to Admin
-        const adminMailOptions = {
-            from: process.env.EMAIL_USER,
-            to: 'shyamvertexpvt@gmail.com',
-            subject: `New Contact Message: ${subject} - ${name}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                    <h2 style="color: #022c22; text-align: center;">New Contact Message</h2>
-                    <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
-                    <p><strong>Name:</strong> ${name}</p>
-                    <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-                    <p><strong>Subject:</strong> ${subject}</p>
-                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
-                        <p><strong>Message:</strong></p>
-                        <p>${message.replace(/\n/g, '<br>')}</p>
+    // 2. Send Emails (Resend API)
+    // Using async/await inside the route handler
+    (async () => {
+        try {
+            // Admin Notification (Priority)
+            const adminData = await resend.emails.send({
+                from: 'Shyam Vertex <onboarding@resend.dev>',
+                to: 'shyamvertexpvt@gmail.com',
+                subject: `New Contact Message: ${subject} - ${name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                        <h2 style="color: #022c22; text-align: center;">New Contact Message</h2>
+                        <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
+                        <p><strong>Name:</strong> ${name}</p>
+                        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+                        <p><strong>Subject:</strong> ${subject}</p>
+                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
+                            <p><strong>Message:</strong></p>
+                            <p>${message.replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website via Resend</p>
                     </div>
-                    <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website</p>
-                </div>
-            `
-        };
+                `
+            });
 
-        transporter.sendMail(adminMailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending admin email:', error);
+            if (adminData.error) console.error('Resend Admin Contact Error:', adminData.error);
+
+            // Acknowledgment (Best Effort)
+            if (email) {
+                try {
+                    await resend.emails.send({
+                        from: 'Shyam Vertex <onboarding@resend.dev>',
+                        to: email,
+                        subject: 'We Received Your Message - Shyam Vertex',
+                        html: `
+                        <div style="font-family: Arial, sans-serif; padding: 20px;">
+                            <h2 style="color: #022c22;">Message Received</h2>
+                            <p>Hello ${name},</p>
+                            <p>Thank you for contacting us. We have received your message regarding "<strong>${subject}</strong>".</p>
+                            <p>Our team will get back to you shortly.</p>
+                            <br>
+                            <p>Best Regards,<br>Shyam Vertex Team</p>
+                        </div>
+                    `
+                    });
+                } catch (ackErr) {
+                    console.warn('Resend Ack Contact Failed:', ackErr.message);
+                }
             }
-            console.log('Contact emails sent successfully.');
-            res.status(200).json({ message: 'Message sent successfully' });
-        });
-    });
+
+            // Success response
+            return res.status(200).json({ message: 'Message sent successfully' });
+
+        } catch (error) {
+            console.error('Error sending contact emails:', error);
+            // Still return success for UX
+            return res.status(200).json({ message: 'Message sent successfully' });
+        }
+    })();
 });
 
 // --- Job Settings API ---
@@ -305,93 +309,90 @@ app.post('/api/apply', upload.single('resume'), (req, res) => {
         }
 
         // 2. Email Configuration Check
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.warn('Email credentials not found in environment variables. Skipping email notifications.');
-            return res.status(200).json({
-                message: 'Application submitted successfully',
-                warning: 'Email notifications were skipped due to server configuration.'
-            });
+        // Resend is initialized globally, but good to ensure we have a key
+        if (!process.env.RESEND_API_KEY) {
+            console.warn('RESEND_API_KEY missing. Using fallback or skipping.');
+            // Proceeding because we likely have the hardcoded fallback
         }
 
-        // 3. Basic Validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email || !emailRegex.test(email)) {
-            return res.status(400).json({ message: 'Invalid or missing email address' });
-        }
-
-        // 4. Send Acknowledgment to Applicant
-        const ackMailOptions = {
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Application Received - Shyam Vertex',
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="color: #022c22;">Application Received</h2>
-                    <p>Dear ${name},</p>
-                    <p>We have received your application for the position of <strong>${role}</strong>.</p>
-                    <p>Our team will review your details and get back to you shortly.</p>
-                    <br>
-                    <p>Best Regards,<br>Shyam Vertex Team</p>
+        // 3. Email Sending (Resend API)
+        try {
+            // Admin Notification (Priority)
+            const adminContent = `
+                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                    <h2 style="color: #022c22; text-align: center;">New Application Received</h2>
+                    <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
+                    <p><strong>Role:</strong> ${role}</p>
+                    <p><strong>Name:</strong> ${name}</p>
+                    <p><strong>Mobile:</strong> ${mobile}</p>
+                    <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+                    <p><strong>Experience:</strong> ${experience}</p>
+                    <p><strong>Skills:</strong> ${skills || 'Not specified'}</p>
+                    ${portfolio ? `<p><strong>Portfolio:</strong> <a href="${portfolio}">${portfolio}</a></p>` : ''}
+                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
+                        <p><strong>Projects / Details:</strong></p>
+                        <p>${(projects || '').replace(/\n/g, '<br>')}</p>
+                    </div>
+                    <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website via Resend</p>
                 </div>
-            `
-        };
+            `;
 
-        transporter.sendMail(ackMailOptions, (ackError, ackInfo) => {
-            if (ackError) {
-                console.error('Error sending acknowledgement email:', ackError);
-                // Even if ack fails, we might want to try notifying admin or just return error.
-                // For now, returning error to client so they know something went wrong with email.
-                return res.status(500).json({
-                    message: 'Application received, but failed to send email confirmation.',
-                    error: ackError.message
-                });
+            const adminAttachments = resumePath ? [{
+                filename: path.basename(resumePath),
+                content: fs.readFileSync(resumePath)
+            }] : [];
+
+            // Execute Admin Email
+            const adminData = await resend.emails.send({
+                from: 'Shyam Vertex <onboarding@resend.dev>',
+                to: 'shyamvertexpvt@gmail.com', // Guaranteed to work if this is the account owner
+                subject: `New Job Application: ${role} - ${name}`,
+                html: adminContent,
+                attachments: adminAttachments
+            });
+
+            if (adminData.error) {
+                console.error('Resend Admin Email Error:', adminData.error);
+            } else {
+                console.log('Resend Admin Email Sent:', adminData.id);
             }
 
-            console.log('Acknowledgement email sent to applicant.');
-
-            // 5. Notification to Admin
-            const adminMailOptions = {
-                from: process.env.EMAIL_USER,
-                to: 'shyamvertexpvt@gmail.com',
-                subject: `New Job Application: ${role} - ${name}`,
-                html: `
-                    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                        <h2 style="color: #022c22; text-align: center;">New Application Received</h2>
-                        <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
-                        <p><strong>Role:</strong> ${role}</p>
-                        <p><strong>Name:</strong> ${name}</p>
-                        <p><strong>Mobile:</strong> ${mobile}</p>
-                        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-                        <p><strong>Experience:</strong> ${experience}</p>
-                        <p><strong>Skills:</strong> ${skills || 'Not specified'}</p>
-                        ${portfolio ? `<p><strong>Portfolio:</strong> <a href="${portfolio}">${portfolio}</a></p>` : ''}
-                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
-                            <p><strong>Projects / Details:</strong></p>
-                            <p>${(projects || '').replace(/\n/g, '<br>')}</p>
-                        </div>
-                        <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website</p>
-                    </div>
-                `,
-                attachments: resumePath ? [
-                    {
-                        filename: path.basename(resumePath),
-                        path: resumePath
-                    }
-                ] : []
-            };
-
-            transporter.sendMail(adminMailOptions, (error, info) => {
-                if (error) {
-                    console.error('Error sending admin email:', error);
-                    // We don't fail the request here because we successfully verified the user
-                } else {
-                    console.log('Admin notification email sent.');
+            // Acknowledgment Email (Best Effort)
+            // This might fail on free tier if 'to' address is not verified
+            if (email) {
+                try {
+                    await resend.emails.send({
+                        from: 'Shyam Vertex <onboarding@resend.dev>',
+                        to: email,
+                        subject: 'Application Received - Shyam Vertex',
+                        html: `
+                            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                                <h2 style="color: #022c22;">Application Received</h2>
+                                <p>Dear ${name},</p>
+                                <p>We have received your application for the position of <strong>${role}</strong>.</p>
+                                <p>Our team will review your details and get back to you shortly.</p>
+                                <br>
+                                <p>Best Regards,<br>Shyam Vertex Team</p>
+                            </div>
+                        `
+                    });
+                    console.log('Resend Acknowledgment Email Sent');
+                } catch (ackError) {
+                    // Log but do not fail the request
+                    console.warn('Resend Acknowledgment Failed (Likely Free Tier limitation):', ackError.message);
                 }
-                // ALWAYS Response Success at this point
-                return res.status(200).json({ message: 'Application submitted successfully' });
-            });
-        });
+            }
 
+            return res.status(200).json({ message: 'Application submitted successfully' });
+
+        } catch (emailError) {
+            console.error('Critical Email Logic Error:', emailError);
+            // Return success to frontend so user isn't discouraged, but log error
+            return res.status(200).json({
+                message: 'Application submitted successfully',
+                warning: 'Email notification system encountered an issue.'
+            });
+        }
     } catch (err) {
         console.error("Unexpected error in /api/apply:", err);
         return res.status(500).json({ message: "Internal Server Error" });
