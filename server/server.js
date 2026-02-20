@@ -71,8 +71,8 @@ const dns = require('dns');
 // Initialize with default (fallback)
 let transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // Use SSL
+    port: 587,
+    secure: false, // Use STARTTLS for Port 587
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -94,8 +94,8 @@ dns.resolve4('smtp.gmail.com', (err, addresses) => {
             // Re-initialize transporter with direct IP
             transporter = nodemailer.createTransport({
                 host: addresses[0],
-                port: 465,
-                secure: true,
+                port: 587,
+                secure: false, // Use STARTTLS
                 auth: {
                     user: process.env.EMAIL_USER,
                     pass: process.env.EMAIL_PASS
