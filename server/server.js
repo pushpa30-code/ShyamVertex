@@ -338,6 +338,37 @@ app.get('/api/debug/status', (req, res) => {
     });
 });
 
+// Debug Route to test email sending specifically
+app.get('/api/debug/send-test-email', (req, res) => {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        return res.status(500).json({ error: 'Email credentials missing in environment variables.' });
+    }
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_USER, // Send to self
+        subject: 'Debug Test Email from Railway',
+        text: 'If you receive this, your email configuration IS working correctly on the server.'
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error('Debug email failed:', error);
+            return res.status(500).json({
+                message: 'Failed to send test email',
+                error: error.message,
+                code: error.code,
+                command: error.command
+            });
+        }
+        res.json({
+            message: 'Test email sent successfully!',
+            response: info.response,
+            accepted: info.accepted
+        });
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
