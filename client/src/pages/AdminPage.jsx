@@ -1,44 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Check, X, LogIn } from 'lucide-react';
+import React, { useState } from 'react';
+import { Shield, LogIn, Briefcase, Layers, FileText, Phone } from 'lucide-react';
 
-import API_URL from '../config';
+import AdminJobs from '../components/admin/AdminJobs';
+import AdminServices from '../components/admin/AdminServices';
+import AdminBlogs from '../components/admin/AdminBlogs';
+import AdminContact from '../components/admin/AdminContact';
 
 const AdminPage = () => {
-    const [jobStatuses, setJobStatuses] = useState([]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('jobs');
 
     // Simple client-side auth for demonstration
     const ADMIN_PASSWORD = "admin";
-
-    const DEFAULT_JOBS = [
-        { role_id: 'fulltime', is_hiring: true, label: 'Full-time' },
-        { role_id: 'internship', is_hiring: true, label: 'Internship' },
-        { role_id: 'freelance', is_hiring: true, label: 'Freelance' }
-    ];
-
-    useEffect(() => {
-        fetchJobs();
-    }, []);
-
-    const fetchJobs = () => {
-        fetch(`${API_URL}/api/jobs`)
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) {
-                    setJobStatuses(data);
-                } else {
-                    console.error('API Error:', data);
-                    setJobStatuses([]);
-                }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Error fetching jobs:', err);
-                setLoading(false);
-            });
-    };
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -47,30 +21,6 @@ const AdminPage = () => {
         } else {
             alert('Incorrect Password');
         }
-    };
-
-    const toggleStatus = (role_id, currentStatus) => {
-        const newStatus = !currentStatus;
-
-        // Optimistic update
-        setJobStatuses(prev => prev.map(job =>
-            job.role_id === role_id ? { ...job, is_hiring: newStatus } : job
-        ));
-
-        fetch(`${API_URL}/api/jobs/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ role_id, is_hiring: newStatus })
-        })
-            .then(res => res.json())
-            .then(data => {
-                // success
-            })
-            .catch(err => {
-                console.error('Error updating status:', err);
-                // Revert on error
-                fetchJobs();
-            });
     };
 
     if (!isAuthenticated) {
@@ -82,7 +32,7 @@ const AdminPage = () => {
                             <Shield className="w-8 h-8 text-primary" />
                         </div>
                         <h2 className="text-2xl font-bold text-gray-800">Admin Access</h2>
-                        <p className="text-gray-500">Please enter password to manage hiring.</p>
+                        <p className="text-gray-500">Please enter password to manage website.</p>
                     </div>
                     <form onSubmit={handleLogin} className="space-y-4">
                         <div>
@@ -106,67 +56,60 @@ const AdminPage = () => {
         );
     }
 
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'jobs': return <AdminJobs />;
+            case 'services': return <AdminServices />;
+            case 'blogs': return <AdminBlogs />;
+            case 'contact': return <AdminContact />;
+            default: return <AdminJobs />;
+        }
+    };
+
+    const TabButton = ({ id, label, icon: Icon }) => (
+        <button
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors border-b-2 ${activeTab === id
+                    ? 'border-primary text-primary bg-primary/5'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+        >
+            <Icon size={18} />
+            <span className="hidden sm:inline">{label}</span>
+        </button>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="bg-primary px-6 py-4 flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-                            <Shield className="w-6 h-6" />
-                            Hiring Control Panel
-                        </h1>
+        <div className="min-h-screen bg-gray-50">
+            <div className="bg-white shadow">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-16">
+                        <div className="flex items-center">
+                            <Shield className="w-8 h-8 text-primary mr-3" />
+                            <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+                        </div>
                         <button
                             onClick={() => setIsAuthenticated(false)}
-                            className="text-white/80 hover:text-white text-sm font-medium"
+                            className="ml-4 flex items-center text-gray-500 hover:text-gray-700"
                         >
-                            Logout
+                            <span className="text-sm font-medium">Logout</span>
                         </button>
                     </div>
+                </div>
+            </div>
 
-                    <div className="p-6">
-                        {loading ? (
-                            <div className="text-center py-8">Loading...</div>
-                        ) : (
-                            <div className="space-y-4">
-                                {jobStatuses.length === 0 ? (
-                                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                                        <p className="text-gray-500">No job roles found. Please check your database connection.</p>
-                                    </div>
-                                ) : (
-                                    jobStatuses.map((job) => (
-                                        <div key={job.role_id} className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow gap-4">
-                                            <div className="text-center sm:text-left">
-                                                <h3 className="text-lg font-bold text-gray-800">{job.label}</h3>
-                                                <div className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${job.is_hiring ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                    {job.is_hiring ? 'Active · Hiring Open' : 'Inactive · Hiring Closed'}
-                                                </div>
-                                            </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Tabs */}
+                <div className="bg-white rounded-t-xl shadow-sm border-b border-gray-200 flex overflow-x-auto">
+                    <TabButton id="jobs" label="Hiring" icon={Briefcase} />
+                    <TabButton id="services" label="Services" icon={Layers} />
+                    <TabButton id="blogs" label="Blogs" icon={FileText} />
+                    <TabButton id="contact" label="Contact Info" icon={Phone} />
+                </div>
 
-                                            <div className="flex items-center gap-4">
-                                                <label className="flex items-center cursor-pointer relative">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="sr-only"
-                                                        checked={job.is_hiring}
-                                                        onChange={() => toggleStatus(job.role_id, job.is_hiring)}
-                                                    />
-                                                    <div className={`w-14 h-7 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary transition-colors ${job.is_hiring ? 'bg-green-500' : ''}`}></div>
-                                                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${job.is_hiring ? 'translate-x-7' : ''}`}></div>
-                                                    <span className="ml-3 text-sm font-medium text-gray-700 sm:hidden">
-                                                        {job.is_hiring ? 'Turn Off' : 'Turn On'}
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        )}
-
-                        <div className="mt-8 p-4 bg-blue-50 rounded-lg text-sm text-blue-700">
-                            <strong>Note:</strong> Changes are applied immediately. Check the Career page to see the updates.
-                        </div>
-                    </div>
+                {/* Content Area */}
+                <div className="bg-white rounded-b-xl shadow p-6 min-h-[500px]">
+                    {renderContent()}
                 </div>
             </div>
         </div>
