@@ -195,93 +195,118 @@ app.post('/api/jobs/update', (req, res) => {
 
 // Application Submission Route
 app.post('/api/apply', upload.single('resume'), (req, res) => {
-    const { name, mobile, email, experience, projects, role, skills, portfolio } = req.body;
-    const resumePath = req.file ? req.file.path : null;
+    try {
+        const { name, mobile, email, experience, projects, role, skills, portfolio } = req.body;
+        const resumePath = req.file ? req.file.path : null;
 
-    // Database Insertion
-    const query = 'INSERT INTO applications (name, mobile, email, experience, projects, role, skills, portfolio, resume_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(query, [name, mobile, email, experience, projects, role, skills, portfolio, resumePath], (err, result) => {
-        if (err) {
-            console.error('Error saving application to database:', err);
-            // If DB fails, we should probably stop here too, but for now we continue to email
+        console.log(`Received application for ${role} from ${name}`);
+
+        // 1. Database Insertion (Only if connected)
+        if (dbConnected) {
+            const query = 'INSERT INTO applications (name, mobile, email, experience, projects, role, skills, portfolio, resume_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            db.query(query, [name, mobile, email, experience, projects, role, skills, portfolio, resumePath], (err, result) => {
+                if (err) {
+                    console.error('Error saving application to database:', err);
+                } else {
+                    console.log('Application saved to database with ID:', result.insertId);
+                }
+            });
         } else {
-            console.log('Application saved to database with ID:', result.insertId);
+            console.warn('Database not connected. Skipping DB insertion for application.');
         }
-    });
 
-    // 1. Basic format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Invalid email format' });
-    }
-
-    // 2. Send Acknowledgment to Applicant (Verifies existence)
-    const ackMailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email, // Send to the applicant
-        subject: 'Application Received - Shyam Vertex',
-        html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2 style="color: #022c22;">Application Received</h2>
-                <p>Dear ${name},</p>
-                <p>We have received your application for the position of <strong>${role}</strong>.</p>
-                <p>Our team will review your details and get back to you shortly.</p>
-                <br>
-                <p>Best Regards,<br>Shyam Vertex Team</p>
-            </div>
-        `
-    };
-
-    transporter.sendMail(ackMailOptions, (ackError, ackInfo) => {
-        if (ackError) {
-            console.error('Error sending acknowledgement email:', ackError);
-            return res.status(400).json({
-                message: 'Could not send email to this address. Please check if the email exists.',
-                error: ackError.message
+        // 2. Email Configuration Check
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.warn('Email credentials not found in environment variables. Skipping email notifications.');
+            return res.status(200).json({
+                message: 'Application submitted successfully',
+                warning: 'Email notifications were skipped due to server configuration.'
             });
         }
 
-        // 3. If valid, send Notification to Admin
-        const adminMailOptions = {
+        // 3. Basic Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid or missing email address' });
+        }
+
+        // 4. Send Acknowledgment to Applicant
+        const ackMailOptions = {
             from: process.env.EMAIL_USER,
-            to: 'shyamvertexpvt@gmail.com',
-            subject: `New Job Application: ${role} - ${name}`,
+            to: email,
+            subject: 'Application Received - Shyam Vertex',
             html: `
-                <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
-                    <h2 style="color: #022c22; text-align: center;">New Application Received</h2>
-                    <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
-                    <p><strong>Role:</strong> ${role}</p>
-                    <p><strong>Name:</strong> ${name}</p>
-                    <p><strong>Mobile:</strong> ${mobile}</p>
-                    <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-                    <p><strong>Experience:</strong> ${experience}</p>
-                    <p><strong>Skills:</strong> ${skills || 'Not specified'}</p>
-                    ${portfolio ? `<p><strong>Portfolio:</strong> <a href="${portfolio}">${portfolio}</a></p>` : ''}
-                    <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
-                        <p><strong>Projects / Details:</strong></p>
-                        <p>${projects.replace(/\n/g, '<br>')}</p>
-                    </div>
-                    <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website</p>
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2 style="color: #022c22;">Application Received</h2>
+                    <p>Dear ${name},</p>
+                    <p>We have received your application for the position of <strong>${role}</strong>.</p>
+                    <p>Our team will review your details and get back to you shortly.</p>
+                    <br>
+                    <p>Best Regards,<br>Shyam Vertex Team</p>
                 </div>
-            `,
-            attachments: resumePath ? [
-                {
-                    filename: path.basename(resumePath),
-                    path: resumePath
-                }
-            ] : []
+            `
         };
 
-        transporter.sendMail(adminMailOptions, (error, info) => {
-            if (error) {
-                console.error('Error sending admin email:', error);
-                // We don't fail the request here because we successfully verified the user
-                // But we should log it clearly. 
+        transporter.sendMail(ackMailOptions, (ackError, ackInfo) => {
+            if (ackError) {
+                console.error('Error sending acknowledgement email:', ackError);
+                // Even if ack fails, we might want to try notifying admin or just return error.
+                // For now, returning error to client so they know something went wrong with email.
+                return res.status(500).json({
+                    message: 'Application received, but failed to send email confirmation.',
+                    error: ackError.message
+                });
             }
-            console.log('Application emails sent successfully.');
-            res.status(200).json({ message: 'Application submitted successfully' });
+
+            console.log('Acknowledgement email sent to applicant.');
+
+            // 5. Notification to Admin
+            const adminMailOptions = {
+                from: process.env.EMAIL_USER,
+                to: 'shyamvertexpvt@gmail.com',
+                subject: `New Job Application: ${role} - ${name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                        <h2 style="color: #022c22; text-align: center;">New Application Received</h2>
+                        <hr style="border: 0; border-top: 2px solid #D4AF37; margin: 20px 0;">
+                        <p><strong>Role:</strong> ${role}</p>
+                        <p><strong>Name:</strong> ${name}</p>
+                        <p><strong>Mobile:</strong> ${mobile}</p>
+                        <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
+                        <p><strong>Experience:</strong> ${experience}</p>
+                        <p><strong>Skills:</strong> ${skills || 'Not specified'}</p>
+                        ${portfolio ? `<p><strong>Portfolio:</strong> <a href="${portfolio}">${portfolio}</a></p>` : ''}
+                        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #022c22; margin-top: 20px;">
+                            <p><strong>Projects / Details:</strong></p>
+                            <p>${(projects || '').replace(/\n/g, '<br>')}</p>
+                        </div>
+                        <p style="margin-top: 30px; font-size: 12px; color: #777; text-align: center;">Sent from Shyam Vertex Website</p>
+                    </div>
+                `,
+                attachments: resumePath ? [
+                    {
+                        filename: path.basename(resumePath),
+                        path: resumePath
+                    }
+                ] : []
+            };
+
+            transporter.sendMail(adminMailOptions, (error, info) => {
+                if (error) {
+                    console.error('Error sending admin email:', error);
+                    // We don't fail the request here because we successfully verified the user
+                } else {
+                    console.log('Admin notification email sent.');
+                }
+                // ALWAYS Response Success at this point
+                return res.status(200).json({ message: 'Application submitted successfully' });
+            });
         });
-    });
+
+    } catch (err) {
+        console.error("Unexpected error in /api/apply:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
 });
 
 // Example API route for services
