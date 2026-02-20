@@ -43,11 +43,13 @@ let mockJobSettings = [
 ];
 
 // Database Connection
+// Database Connection
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'shyamvertex_db'
+    host: process.env.MYSQL_HOST || process.env.DB_HOST || 'localhost',
+    user: process.env.MYSQL_USER || process.env.DB_USER || 'root',
+    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || '',
+    database: process.env.MYSQL_DATABASE || process.env.DB_NAME || 'shyamvertex_db',
+    port: process.env.MYSQL_PORT || process.env.DB_PORT || 3306
 });
 
 db.connect((err) => {
@@ -64,7 +66,6 @@ db.connect((err) => {
 });
 
 // Email Transporter Configuration
-// Email Transporter Configuration
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -72,6 +73,102 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    // Connection timeout settings
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 5000,
+    socketTimeout: 15000
+});
+
+// Routes
+app.get('/', (req, res) => {
+    res.send('Shyam Vertex API is running');
+});
+
+// ... (skipping contact form route for brevity, focus on apply route)
+
+// Application Submission Route
+app.post('/api/apply', upload.single('resume'), async (req, res) => {
+    try {
+        const { name, mobile, email, experience, projects, role, skills, portfolio } = req.body;
+        const resumePath = req.file ? req.file.path : null;
+
+        console.log(`Received application for ${role} from ${name}`);
+
+        // 1. Database Insertion (Only if connected)
+        if (dbConnected) {
+            const query = 'INSERT INTO applications (name, mobile, email, experience, projects, role, skills, portfolio, resume_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            db.query(query, [name, mobile, email, experience, projects, role, skills, portfolio, resumePath], (err, result) => {
+                if (err) {
+                    console.error('Error saving application to database:', err);
+                } else {
+                    console.log('Application saved to database with ID:', result.insertId);
+                }
+            });
+        } else {
+            console.warn('Database not connected. Skipping DB insertion for application.');
+        }
+
+        // 2. Email Configuration Check
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.warn('Email credentials not found. Skipping notifications.');
+            return res.status(200).json({
+                message: 'Application submitted successfully',
+                warning: 'Email notifications skipped.'
+            });
+        }
+
+        // 3. Email Sending with Timeout
+        const sendEmailPromise = new Promise((resolve, reject) => {
+            const ackMailOptions = {
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Application Received - Shyam Vertex',
+                html: `<p>Dear ${name},<br>We received your application for <strong>${role}</strong>.<br>Best,<br>Shyam Vertex Team</p>`
+            };
+
+            transporter.sendMail(ackMailOptions, (err, info) => {
+                if (err) return reject(err);
+
+                // Admin Notification (Fire and forget from promise perspective, or chain it)
+                const adminMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: 'shyamvertexpvt@gmail.com',
+                    subject: `New Job Application: ${role} - ${name}`,
+                    html: `<p>New application from ${name} for ${role}.<br>Email: ${email}<br>Mobile: ${mobile}</p>`,
+                    attachments: resumePath ? [{ filename: path.basename(resumePath), path: resumePath }] : []
+                };
+
+                transporter.sendMail(adminMailOptions, (adminErr) => {
+                    if (adminErr) console.error('Admin email failed:', adminErr);
+                    else console.log('Admin email sent.');
+                });
+
+                resolve(info);
+            });
+        });
+
+        // Set a timeout for the email operation
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email sending timed out')), 8000)
+        );
+
+        try {
+            await Promise.race([sendEmailPromise, timeoutPromise]);
+            console.log('Email sent successfully.');
+            return res.status(200).json({ message: 'Application submitted successfully' });
+        } catch (emailError) {
+            console.error('Email sending failed or timed out:', emailError.message);
+            // Return success anyway, as the application is "submitted" even if email fails
+            return res.status(200).json({
+                message: 'Application submitted successfully',
+                warning: 'Confirmation email could not be sent due to server timeout.'
+            });
+        }
+
+    } catch (err) {
+        console.error("Unexpected error in /api/apply:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 });
 
