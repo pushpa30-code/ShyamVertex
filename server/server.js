@@ -66,54 +66,76 @@ db.connect((err) => {
 });
 
 // Email Transporter Configuration
-const dns = require('dns');
-
-// Initialize with default (fallback)
-let transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // Use STARTTLS for Port 587
+// Using standard 'service' shorthand which handles host/port/secure automatically
+// Added family: 4 to prefer IPv4
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: {
-        servername: 'smtp.gmail.com'
-    },
-    family: 4, // Prefer IPv4
+    family: 4, // Attempt to force IPv4
     connectionTimeout: 10000,
     greetingTimeout: 5000,
     socketTimeout: 15000
 });
 
-// Optimization: Try to resolve IPv4 directly to bypass IPv6 issues (Production Fix)
-dns.resolve4('smtp.gmail.com', (err, addresses) => {
-    if (!err && addresses && addresses.length > 0) {
-        console.log(`[Email] Resolved smtp.gmail.com to IPv4: ${addresses[0]} - Using direct IP.`);
-        try {
-            // Re-initialize transporter with direct IP
-            transporter = nodemailer.createTransport({
-                host: addresses[0],
-                port: 587,
-                secure: false, // Use STARTTLS
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                },
-                tls: { servername: 'smtp.gmail.com' },
-                family: 4,
-                connectionTimeout: 10000,
-                greetingTimeout: 5000,
-                socketTimeout: 15000
-            });
-        } catch (e) {
-            console.warn('[Email] Failed to update transporter with IP:', e.message);
+// Network Connectivity Debugger
+const net = require('net');
+const dns = require('dns');
+
+app.get('/api/debug/connectivity', (req, res) => {
+    const results = {
+        dns: { resolved: false, addresses: [], error: null },
+        ports: {
+            465: { status: 'pending', error: null },
+            587: { status: 'pending', error: null }
+        },
+        env: {
+            user_configured: !!process.env.EMAIL_USER,
+            pass_configured: !!process.env.EMAIL_PASS
         }
-    } else {
-        // This is expected locally if DNS is restricted, but critical for Prod
-        console.log('[Email] DNS resolution skipped or failed, using default hostname (standard mode).');
-        if (err) console.log(`[Email] DNS Info: ${err.code}`);
-    }
+    };
+
+    // 1. Check DNS
+    dns.resolve4('smtp.gmail.com', (err, addresses) => {
+        if (err) results.dns.error = err.code;
+        else {
+            results.dns.resolved = true;
+            results.dns.addresses = addresses;
+        }
+
+        const checkPort = (port) => new Promise((resolve) => {
+            const socket = new net.Socket();
+            socket.setTimeout(3000); // 3s timeout
+
+            socket.on('connect', () => {
+                results.ports[port].status = 'open';
+                socket.destroy();
+                resolve();
+            });
+
+            socket.on('timeout', () => {
+                results.ports[port].status = 'timeout';
+                results.ports[port].error = 'ETIMEDOUT';
+                socket.destroy();
+                resolve();
+            });
+
+            socket.on('error', (e) => {
+                results.ports[port].status = 'closed/blocked';
+                results.ports[port].error = e.code || e.message;
+                resolve();
+            });
+
+            socket.connect(port, 'smtp.gmail.com');
+        });
+
+        // Check ports sequentially
+        Promise.all([checkPort(465), checkPort(587)]).then(() => {
+            res.json(results);
+        });
+    });
 });
 
 // Routes
