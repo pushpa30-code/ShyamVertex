@@ -6,7 +6,7 @@ const multer = require('multer');
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 // Ensure uploads directory exists
 const uploadDir = 'uploads';
@@ -65,78 +65,9 @@ db.connect((err) => {
     dbConnected = true;
 });
 
-// Email Transporter Configuration
-// Using standard 'service' shorthand which handles host/port/secure automatically
-// Added family: 4 to prefer IPv4
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    family: 4, // Attempt to force IPv4
-    connectionTimeout: 10000,
-    greetingTimeout: 5000,
-    socketTimeout: 15000
-});
-
-// Network Connectivity Debugger
-const net = require('net');
-const dns = require('dns');
-
-app.get('/api/debug/connectivity', (req, res) => {
-    const results = {
-        dns: { resolved: false, addresses: [], error: null },
-        ports: {
-            465: { status: 'pending', error: null },
-            587: { status: 'pending', error: null }
-        },
-        env: {
-            user_configured: !!process.env.EMAIL_USER,
-            pass_configured: !!process.env.EMAIL_PASS
-        }
-    };
-
-    // 1. Check DNS
-    dns.resolve4('smtp.gmail.com', (err, addresses) => {
-        if (err) results.dns.error = err.code;
-        else {
-            results.dns.resolved = true;
-            results.dns.addresses = addresses;
-        }
-
-        const checkPort = (port) => new Promise((resolve) => {
-            const socket = new net.Socket();
-            socket.setTimeout(3000); // 3s timeout
-
-            socket.on('connect', () => {
-                results.ports[port].status = 'open';
-                socket.destroy();
-                resolve();
-            });
-
-            socket.on('timeout', () => {
-                results.ports[port].status = 'timeout';
-                results.ports[port].error = 'ETIMEDOUT';
-                socket.destroy();
-                resolve();
-            });
-
-            socket.on('error', (e) => {
-                results.ports[port].status = 'closed/blocked';
-                results.ports[port].error = e.code || e.message;
-                resolve();
-            });
-
-            socket.connect(port, 'smtp.gmail.com');
-        });
-
-        // Check ports sequentially
-        Promise.all([checkPort(465), checkPort(587)]).then(() => {
-            res.json(results);
-        });
-    });
-});
+// Email Configuration (Resend API)
+// Using hardcoded key for immediate testing, but prefer env var in production
+const resend = new Resend(process.env.RESEND_API_KEY || 're_94jjDUZm_299jpxcCAs3gWPNysZ17CjhQ');
 
 // Routes
 app.get('/', (req, res) => {
@@ -497,34 +428,28 @@ app.get('/api/debug/status', (req, res) => {
 });
 
 // Debug Route to test email sending specifically
-app.get('/api/debug/send-test-email', (req, res) => {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        return res.status(500).json({ error: 'Email credentials missing in environment variables.' });
-    }
+// Debug Route to test email sending specifically (Resend)
+app.get('/api/debug/send-test-email', async (req, res) => {
+    try {
+        const data = await resend.emails.send({
+            from: 'Shyam Vertex <onboarding@resend.dev>',
+            to: 'shyamvertexpvt@gmail.com', // Verified address
+            subject: 'Debug Test Email from Resend',
+            html: '<strong>It works!</strong> The server can now send emails bypasssing the firewall.'
+        });
 
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: process.env.EMAIL_USER, // Send to self
-        subject: 'Debug Test Email from Railway',
-        text: 'If you receive this, your email configuration IS working correctly on the server.'
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Debug email failed:', error);
-            return res.status(500).json({
-                message: 'Failed to send test email',
-                error: error.message,
-                code: error.code,
-                command: error.command
-            });
+        if (data.error) {
+            return res.status(500).json({ error: data.error });
         }
+
         res.json({
             message: 'Test email sent successfully!',
-            response: info.response,
-            accepted: info.accepted
+            data: data
         });
-    });
+    } catch (error) {
+        console.error('Debug email failed:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(PORT, () => {
