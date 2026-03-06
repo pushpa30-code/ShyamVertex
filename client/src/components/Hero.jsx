@@ -51,14 +51,9 @@ const Hero = () => {
                         </span>
                     </motion.div>
 
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white leading-tight drop-shadow-md">
-                        <motion.span
-                            animate={{ scale: [1, 1.02, 1] }}
-                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                            className="inline-block pb-2 text-primary"
-                        >
-                            ShyamVertex
-                        </motion.span>
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white leading-tight drop-shadow-2xl uppercase">
+                        Architecting the <br />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary animate-gradient">Digital Future</span>
                     </h1>
 
                     <p className="text-2xl md:text-4xl lg:text-5xl font-light text-white max-w-3xl mx-auto leading-relaxed drop-shadow-lg">

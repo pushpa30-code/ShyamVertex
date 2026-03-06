@@ -9,7 +9,6 @@ import badaBuilderLogo from '../images/bada builder logo.jpeg';
 const Partners = () => {
     const partners = [
         { name: 'Ambitious Corporation', logo: ambitiousLogo, url: 'https://ambitiouscorporation.in' },
-        { name: 'Axiom Hitech', logo: axiomLogo, url: 'https://platekhata.in' },
         { name: 'Bada Builder', logo: badaBuilderLogo, url: 'https://badabuilder.com' },
         { name: 'Gramfs', logo: null, url: 'https://gramfs.com' },
         { name: 'VVA Infras', logo: null, url: 'https://vvainfras.com' },
