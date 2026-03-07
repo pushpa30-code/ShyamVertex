@@ -45,12 +45,100 @@ let mockJobSettings = [
 // Database Connection
 // Database Connection
 const db = mysql.createConnection({
-    host: process.env.MYSQL_HOST || process.env.DB_HOST || 'localhost',
-    user: process.env.MYSQL_USER || process.env.DB_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || '',
-    database: process.env.MYSQL_DATABASE || process.env.DB_NAME || 'shyamvertex_db',
-    port: process.env.MYSQL_PORT || process.env.DB_PORT || 3306
+    host: process.env.MYSQLHOST || process.env.MYSQL_HOST || process.env.DB_HOST || 'localhost',
+    user: process.env.MYSQLUSER || process.env.MYSQL_USER || process.env.DB_USER || 'root',
+    password: process.env.MYSQLPASSWORD || process.env.MYSQL_PASSWORD || process.env.DB_PASSWORD || '',
+    database: process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || process.env.DB_NAME || 'shyamvertex_db',
+    port: process.env.MYSQLPORT || process.env.MYSQL_PORT || process.env.DB_PORT || 3306
 });
+
+const initializeDatabase = () => {
+    const tables = [
+        `CREATE TABLE IF NOT EXISTS contact_info (
+            id INT PRIMARY KEY DEFAULT 1,
+            email VARCHAR(255),
+            phone_1 VARCHAR(50),
+            phone_2 VARCHAR(50),
+            address TEXT,
+            instagram VARCHAR(255),
+            linkedin VARCHAR(255)
+        )`,
+        `CREATE TABLE IF NOT EXISTS job_settings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            role_id VARCHAR(50) UNIQUE,
+            label VARCHAR(100),
+            is_hiring BOOLEAN DEFAULT TRUE
+        )`,
+        `CREATE TABLE IF NOT EXISTS services (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255),
+            description TEXT,
+            icon VARCHAR(50)
+        )`,
+        `CREATE TABLE IF NOT EXISTS blogs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255),
+            excerpt TEXT,
+            content TEXT,
+            author VARCHAR(100),
+            date DATE,
+            image TEXT
+        )`,
+        `CREATE TABLE IF NOT EXISTS contact_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            email VARCHAR(100),
+            subject VARCHAR(255),
+            message TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS invite_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            email VARCHAR(100),
+            phone VARCHAR(50),
+            location VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`,
+        `CREATE TABLE IF NOT EXISTS applications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100),
+            mobile VARCHAR(50),
+            email VARCHAR(100),
+            experience VARCHAR(50),
+            projects TEXT,
+            role VARCHAR(100),
+            skills TEXT,
+            portfolio VARCHAR(255),
+            resume_path VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`
+    ];
+
+    tables.forEach(query => {
+        db.query(query, (err) => {
+            if (err) console.error('Error creating table:', err.message);
+        });
+    });
+
+    // Seed initial data if tables are empty
+    db.query('SELECT COUNT(*) as count FROM job_settings', (err, results) => {
+        if (!err && results[0].count === 0) {
+            const seedJobs = [
+                ['fulltime', 'Full-time', 1],
+                ['internship', 'Internship', 1],
+                ['freelance', 'Freelance', 1]
+            ];
+            db.query('INSERT INTO job_settings (role_id, label, is_hiring) VALUES ?', [seedJobs]);
+        }
+    });
+
+    db.query('SELECT COUNT(*) as count FROM contact_info', (err, results) => {
+        if (!err && results[0].count === 0) {
+            db.query('INSERT INTO contact_info (id, email, phone_1, address) VALUES (1, "shyamvertexpvt@gmail.com", "+91 87993-03431", "Vadodara, Gujarat")');
+        }
+    });
+};
 
 db.connect((err) => {
     if (err) {
@@ -63,6 +151,7 @@ db.connect((err) => {
     }
     console.log('Connected to MySQL database.');
     dbConnected = true;
+    initializeDatabase();
 });
 
 // Email Configuration (Resend API)
