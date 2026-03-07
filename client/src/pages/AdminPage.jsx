@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AdminJobs from '../components/admin/AdminJobs';
 import AdminServices from '../components/admin/AdminServices';
 import AdminBlogs from '../components/admin/AdminBlogs';
+import API_URL from '../config';
 import AdminContact from '../components/admin/AdminContact';
 
 const AdminPage = () => {
@@ -169,7 +170,7 @@ const AdminPage = () => {
                             <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">System Online</span>
                         </div>
                         <div className="px-3 py-1 bg-slate-100 rounded text-[9px] font-mono text-slate-500 border border-slate-200">
-                            API: {import.meta.env.VITE_API_URL || "AUTO_DETECTED"}
+                            API: {API_URL}
                         </div>
                     </div>
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
