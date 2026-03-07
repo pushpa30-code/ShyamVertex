@@ -30,9 +30,9 @@ const FAQ = () => {
     return (
         <section id="faq" className="py-28 bg-charcoal relative overflow-hidden">
             <div className="container mx-auto px-4 max-w-3xl">
-                <div className="text-center mb-20">
-                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Helpful <span className="text-primary italic">Answers</span></h2>
-                    <div className="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Helpful <span className="text-primary">Answers</span></h2>
+                    <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
                 </div>
 
                 <div className="space-y-4">

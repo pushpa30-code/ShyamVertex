@@ -159,6 +159,73 @@ app.post('/api/contact', (req, res) => {
     })();
 });
 
+// Request Invite Endpoint
+app.post('/api/request-invite', async (req, res) => {
+    const { name, email, phone, location } = req.body;
+
+    // Log to console for debugging
+    console.log(`New Invite Request: ${name} (${email}) from ${location}`);
+
+    // 1. Database (Best Effort)
+    if (dbConnected) {
+        const query = 'INSERT INTO invite_requests (name, email, phone, location) VALUES (?, ?, ?, ?)';
+        db.query(query, [name, email, phone, location], (err) => {
+            if (err) console.error('DB Error saving invite request:', err);
+        });
+    }
+
+    // 2. Send Admin Notification via Resend
+    try {
+        const data = await resend.emails.send({
+            from: 'Shyam Vertex <onboarding@resend.dev>',
+            to: process.env.ADMIN_EMAIL || 'shyamvertexpvt@gmail.com',
+            subject: `Crewmitra Demo Request: ${name}`,
+            html: `
+                <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 30px; border-radius: 12px; background-color: #ffffff;">
+                    <div style="background-color: #000; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                        <h1 style="color: #FFD000; margin: 0; font-size: 24px; letter-spacing: 2px;">SHYAM VERTEX</h1>
+                    </div>
+                    <div style="padding: 20px;">
+                        <h2 style="color: #333; border-bottom: 2px solid #FFD000; padding-bottom: 10px; margin-bottom: 20px;">New Platform Invite Request</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 10px 0; font-weight: bold; color: #666; width: 120px;">Name:</td>
+                                <td style="padding: 10px 0; color: #000;">${name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 0; font-weight: bold; color: #666;">Email:</td>
+                                <td style="padding: 10px 0;"><a href="mailto:${email}" style="color: #0066cc; text-decoration: none;">${email}</a></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 0; font-weight: bold; color: #666;">Phone:</td>
+                                <td style="padding: 10px 0; color: #000;">${phone}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 0; font-weight: bold; color: #666;">Location:</td>
+                                <td style="padding: 10px 0; color: #000;">${location}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+                        <p style="font-size: 12px; color: #999;">This request was generated from the Product Page invite form.</p>
+                    </div>
+                </div>
+            `
+        });
+
+        if (data.error) {
+            console.error('Resend Error:', data.error);
+            // Even if email fails, we return 200 to UI if DB succeeded or we logged it
+            return res.status(200).json({ message: 'Request logged, email failed.' });
+        }
+
+        res.status(200).json({ message: 'Request sent successfully' });
+    } catch (error) {
+        console.error('Server error handling invite:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 // --- Job Settings API ---
 
 // Get all job statuses
@@ -174,6 +241,33 @@ app.get('/api/jobs', (req, res) => {
             return res.status(500).json({ message: 'Internal server error' });
         }
         res.json(results);
+    });
+});
+
+// --- Contact Info API ---
+app.get('/api/contact-info', (req, res) => {
+    if (!dbConnected) return res.json({ email: 'support@shyamvertex.com' });
+    db.query('SELECT * FROM contact_info WHERE id = 1', (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results[0] || {});
+    });
+});
+
+app.post('/api/contact-info', (req, res) => {
+    const { email, phone_1, phone_2, address, instagram, linkedin } = req.body;
+    if (!dbConnected) return res.json({ message: 'Updated (Memory)' });
+
+    const query = `
+        INSERT INTO contact_info (id, email, phone_1, phone_2, address, instagram, linkedin)
+        VALUES (1, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+        email=?, phone_1=?, phone_2=?, address=?, instagram=?, linkedin=?
+    `;
+    const vals = [email, phone_1, phone_2, address, instagram, linkedin, email, phone_1, phone_2, address, instagram, linkedin];
+
+    db.query(query, vals, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Contact info updated' });
     });
 });
 
@@ -316,22 +410,132 @@ app.post('/api/apply', upload.single('resume'), async (req, res) => {
     }
 });
 
-// Example API route for services
+// --- Services API ---
+
+// Get all services
 app.get('/api/services', (req, res) => {
-    // Placeholder data until DB is populated
-    const services = [
-        { id: 1, title: 'UI/UX Design', description: 'Crafting intuitive and engaging user experiences.' },
-        { id: 2, title: 'Website Development', description: 'Building responsive and high-performance websites.' },
-        { id: 3, title: 'App Development', description: 'Developing mobile applications for iOS and Android.' },
-        { id: 4, title: 'Custom Software', description: 'Tailored software solutions for your business needs.' },
-        { id: 5, title: 'Cloud Services', description: 'Scalable cloud infrastructure and management.' },
-        { id: 6, title: 'IT Consultancy', description: 'Expert advice to optimize your IT strategy.' }
-    ];
+    if (!dbConnected) {
+        const fallbackServices = [
+            { id: 1, title: 'UI/UX Design', description: 'Crafting intuitive and engaging user experiences.', icon: 'Layout' },
+            { id: 2, title: 'Website Development', description: 'Building responsive and high-performance websites.', icon: 'Code' },
+            { id: 3, title: 'App Development', description: 'Developing mobile applications for iOS and Android.', icon: 'Smartphone' },
+            { id: 4, title: 'Custom Software', description: 'Tailored software solutions for your business needs.', icon: 'Cpu' },
+            { id: 5, title: 'Cloud Services', description: 'Scalable cloud infrastructure and management.', icon: 'Cloud' },
+            { id: 6, title: 'IT Consultancy', description: 'Expert advice to optimize your IT strategy.', icon: 'Monitor' }
+        ];
+        return res.json(fallbackServices);
+    }
+    const query = 'SELECT * FROM services ORDER BY id DESC';
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching services:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+        res.json(results);
+    });
+});
 
-    // If DB is connected, query it here
-    // db.query('SELECT * FROM services', (err, results) => { ... });
+// Add a new service (Admin)
+app.post('/api/services', (req, res) => {
+    const { title, description, icon } = req.body;
+    if (!title || !description) return res.status(400).json({ message: 'Missing fields' });
 
-    res.json(services);
+    if (!dbConnected) return res.json({ message: 'Added (In-Memory Fallback)' });
+
+    const query = 'INSERT INTO services (title, description, icon) VALUES (?, ?, ?)';
+    db.query(query, [title, description, icon || 'Code'], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: result.insertId, message: 'Service added successfully' });
+    });
+});
+
+// Update a service (Admin)
+app.put('/api/services/:id', (req, res) => {
+    const { id } = req.params;
+    const { title, description, icon } = req.body;
+    if (!dbConnected) return res.json({ message: 'Updated (Memory)' });
+
+    const query = 'UPDATE services SET title = ?, description = ?, icon = ? WHERE id = ?';
+    db.query(query, [title, description, icon, id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Service updated' });
+    });
+});
+
+// Delete a service (Admin)
+app.delete('/api/services/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbConnected) return res.json({ message: 'Deleted (In-Memory Fallback)' });
+
+    const query = 'DELETE FROM services WHERE id = ?';
+    db.query(query, [id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Service deleted successfully' });
+    });
+});
+
+// --- Blogs API ---
+
+// Get all blogs
+app.get('/api/blogs', (req, res) => {
+    if (!dbConnected) return res.json([]);
+    const query = 'SELECT * FROM blogs ORDER BY date DESC';
+    db.query(query, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// Add a new blog (Admin)
+app.post('/api/blogs', upload.single('image'), (req, res) => {
+    const { title, excerpt, content, author, date } = req.body;
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!title || !content) return res.status(400).json({ message: 'Missing fields' });
+    if (!dbConnected) return res.json({ message: 'Blog added (In-Memory Fallback)' });
+
+    const query = 'INSERT INTO blogs (title, excerpt, content, author, date, image) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(query, [title, excerpt, content, author, date || new Date().toISOString().split('T')[0], imagePath], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: result.insertId, message: 'Blog post created' });
+    });
+});
+
+// Update a blog (Admin)
+app.put('/api/blogs/:id', upload.single('image'), (req, res) => {
+    const { id } = req.params;
+    const { title, excerpt, content, author, date } = req.body;
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!dbConnected) return res.json({ message: 'Updated (Memory)' });
+
+    let query = 'UPDATE blogs SET title = ?, excerpt = ?, content = ?, author = ?, date = ?';
+    let params = [title, excerpt, content, author, date];
+
+    if (imagePath) {
+        query += ', image = ?';
+        params.push(imagePath);
+    }
+
+    query += ' WHERE id = ?';
+    params.push(id);
+
+    db.query(query, params, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Blog updated' });
+    });
+});
+
+// Delete a blog (Admin)
+app.delete('/api/blogs/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbConnected) return res.json({ message: 'Deleted (In-Memory Fallback)' });
+
+    const query = 'DELETE FROM blogs WHERE id = ?';
+    db.query(query, [id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Blog deleted successfully' });
+    });
 });
 
 // Debug Route to check server configuration (remove in production if sensitive)

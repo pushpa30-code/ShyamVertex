@@ -17,7 +17,7 @@ const FadeInSection = ({ children }) => {
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.2 }} // Requires 20% of section to be visible before animating
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
         >
             {children}
         </motion.div>

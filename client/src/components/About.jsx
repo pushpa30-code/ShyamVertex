@@ -17,7 +17,7 @@ const About = () => {
                     <div>
                         <h3 className="text-3xl font-bold mb-8 text-primary">Our Story</h3>
                         <p className="text-accent text-lg leading-relaxed mb-8 font-light">
-                            Founded with a vision to redefine the IT landscape, ShyamVertex has grown from a small consultancy to a full-service technology partner.
+                            Founded with a vision to redefine the IT landscape, <span className="text-white font-bold tracking-tight px-1 text-xl">Shyam<span className="text-primary">Vertex</span></span> has grown from a small consultancy to a full-service technology partner.
                             We believe in the power of technology to transform businesses and improve lives. Our journey is defined by a relentless pursuit of excellence and a commitment to our clients' success.
                         </p>
                         <p className="text-gray-600 leading-relaxed font-light border-l-4 border-primary pl-4 italic bg-primary/5 p-4 rounded-r-lg">
@@ -28,7 +28,7 @@ const About = () => {
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] group-hover:bg-primary/10 transition-all duration-500"></div>
                         <h3 className="text-2xl font-bold mb-10 text-white flex items-center gap-3">
                             <span className="w-12 h-1 bg-primary rounded-full"></span>
-                            Why Choose <span className="text-primary italic">Us?</span>
+                            Why Choose <span className="text-primary">Us?</span>
                         </h3>
                         <ul className="space-y-8 relative z-10">
                             <li className="flex items-start group">

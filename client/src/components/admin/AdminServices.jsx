@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Code, Smartphone, Layout, Cloud, Database, Monitor, Server, Globe, Cpu } from 'lucide-react';
+import { Plus, Trash2, Code, Smartphone, Layout, Cloud, Database, Monitor, Server, Globe, Cpu, Brain, Sparkles, Bot, Shield, Terminal } from 'lucide-react';
 import API_URL from '../../config';
 
 const AdminServices = () => {
@@ -8,7 +8,9 @@ const AdminServices = () => {
     const [showForm, setShowForm] = useState(false);
     const [newService, setNewService] = useState({ title: '', description: '', icon: 'Code' });
 
-    const ICONS = ['Code', 'Smartphone', 'Layout', 'Cloud', 'Database', 'Monitor', 'Server', 'Globe', 'Cpu'];
+    const [editingId, setEditingId] = useState(null);
+
+    const ICONS = ['Code', 'Smartphone', 'Layout', 'Cloud', 'Database', 'Monitor', 'Server', 'Globe', 'Cpu', 'Brain', 'Sparkles', 'Bot', 'Shield', 'Terminal'];
 
     useEffect(() => {
         fetchServices();
@@ -36,16 +38,26 @@ const AdminServices = () => {
         }
     };
 
+    const handleEdit = (service) => {
+        setNewService({ title: service.title, description: service.description, icon: service.icon });
+        setEditingId(service.id);
+        setShowForm(true);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`${API_URL}/api/services`, {
-                method: 'POST',
+            const url = editingId ? `${API_URL}/api/services/${editingId}` : `${API_URL}/api/services`;
+            const method = editingId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newService)
             });
             if (res.ok) {
                 setNewService({ title: '', description: '', icon: 'Code' });
+                setEditingId(null);
                 setShowForm(false);
                 fetchServices();
             }
@@ -54,83 +66,116 @@ const AdminServices = () => {
         }
     };
 
+    const renderIcon = (iconName, size = 24) => {
+        const iconMap = {
+            'Code': <Code size={size} />,
+            'Smartphone': <Smartphone size={size} />,
+            'Layout': <Layout size={size} />,
+            'Cloud': <Cloud size={size} />,
+            'Database': <Database size={size} />,
+            'Monitor': <Monitor size={size} />,
+            'Server': <Server size={size} />,
+            'Globe': <Globe size={size} />,
+            'Cpu': <Cpu size={size} />,
+            'Brain': <Brain size={size} />,
+            'Sparkles': <Sparkles size={size} />,
+            'Bot': <Bot size={size} />,
+            'Shield': <Shield size={size} />,
+            'Terminal': <Terminal size={size} />
+        };
+        return iconMap[iconName] || <Code size={size} />;
+    };
+
     return (
-        <div className="bg-charcoal p-8 rounded-[2rem] border border-white/5">
-            <div className="flex justify-between items-center mb-10">
-                <h2 className="text-2xl font-black text-white border-l-4 border-primary pl-4 uppercase tracking-tight">Manage Services</h2>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                <div className="space-y-1">
+                    <h2 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">Services <span className="text-blue-600">Hub</span></h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manage your core offerings</p>
+                </div>
                 <button
-                    onClick={() => setShowForm(!showForm)}
-                    className="flex items-center gap-3 bg-primary text-dark px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-yellow-glow shadow-xl shadow-primary/20 transition-all"
+                    onClick={() => { setShowForm(!showForm); if (showForm) setEditingId(null); }}
+                    className="flex items-center gap-3 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-xs hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all"
                 >
-                    <Plus size={20} /> Add Service
+                    <Plus size={18} /> {showForm ? 'Cancel' : 'Add Service'}
                 </button>
             </div>
 
             {showForm && (
-                <form onSubmit={handleSubmit} className="mb-12 p-8 bg-dark rounded-[2rem] border border-white/10 shadow-2xl relative group overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[40px]"></div>
-                    <div className="grid gap-6 relative z-10">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <input
-                                type="text"
-                                placeholder="Service Title"
-                                className="w-full px-6 py-4 bg-charcoal border border-white/10 rounded-2xl text-white placeholder-white/20 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold"
-                                value={newService.title}
-                                onChange={e => setNewService({ ...newService, title: e.target.value })}
+                <form onSubmit={handleSubmit} className="p-10 bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden relative">
+                    <div className="absolute top-0 left-0 w-full h-1.5 bg-blue-600" />
+                    <div className="grid gap-8">
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Service Title</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Web Development"
+                                    className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                                    value={newService.title}
+                                    onChange={e => setNewService({ ...newService, title: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Icon</label>
+                                <select
+                                    className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold uppercase cursor-pointer"
+                                    value={newService.icon}
+                                    onChange={e => setNewService({ ...newService, icon: e.target.value })}
+                                >
+                                    {ICONS.map(icon => <option key={icon} value={icon} className="bg-white text-slate-900">{icon}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                            <textarea
+                                placeholder="Describe this service..."
+                                className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium h-32 resize-none"
+                                value={newService.description}
+                                onChange={e => setNewService({ ...newService, description: e.target.value })}
                                 required
                             />
-                            <select
-                                className="w-full px-6 py-4 bg-charcoal border border-white/10 rounded-2xl text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold appearance-none cursor-pointer"
-                                value={newService.icon}
-                                onChange={e => setNewService({ ...newService, icon: e.target.value })}
-                            >
-                                {ICONS.map(icon => <option key={icon} value={icon} className="bg-dark text-white">{icon}</option>)}
-                            </select>
                         </div>
-                        <textarea
-                            placeholder="Service Description"
-                            className="w-full px-6 py-4 bg-charcoal border border-white/10 rounded-2xl text-white placeholder-white/20 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-medium h-32 resize-none"
-                            value={newService.description}
-                            onChange={e => setNewService({ ...newService, description: e.target.value })}
-                            required
-                        />
-                        <div className="flex justify-end gap-4 pt-2">
-                            <button type="button" onClick={() => setShowForm(false)} className="px-6 py-3 text-accent hover:text-white font-bold uppercase tracking-widest text-xs transition-colors">Cancel</button>
-                            <button type="submit" className="px-8 py-3 bg-primary text-dark rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-yellow-glow shadow-xl shadow-primary/20 transition-all">Save Service</button>
+                        <div className="flex justify-end pt-2">
+                            <button type="submit" className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">
+                                {editingId ? 'Update Module' : 'Initialize Module'}
+                            </button>
                         </div>
                     </div>
                 </form>
             )}
 
-            <div className="space-y-4">
+            <div className="grid gap-4">
                 {services.map(service => (
-                    <div key={service.id} className="flex justify-between items-center p-6 bg-dark border border-white/5 rounded-[2rem] hover:border-primary/30 transition-all duration-300 group shadow-2xl">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-dark transition-all duration-500 shadow-[inset_0_0_20px_rgba(255,208,0,0.05)]">
-                                {service.icon === 'Code' && <Code size={28} />}
-                                {service.icon === 'Smartphone' && <Smartphone size={28} />}
-                                {service.icon === 'Layout' && <Layout size={28} />}
-                                {service.icon === 'Cloud' && <Cloud size={28} />}
-                                {service.icon === 'Database' && <Database size={28} />}
-                                {service.icon === 'Monitor' && <Monitor size={28} />}
-                                {service.icon === 'Server' && <Server size={28} />}
-                                {service.icon === 'Globe' && <Globe size={28} />}
-                                {service.icon === 'Cpu' && <Cpu size={28} />}
+                    <div key={service.id} className="flex justify-between items-center p-8 bg-white border border-slate-200 rounded-[2.5rem] group hover:shadow-lg transition-all shadow-sm">
+                        <div className="flex items-center gap-8">
+                            <div className="w-20 h-20 bg-slate-50 rounded-[1.8rem] flex items-center justify-center text-blue-600 border border-slate-100 group-hover:border-blue-500/30 transition-all shadow-inner">
+                                {renderIcon(service.icon, 28)}
                             </div>
                             <div>
-                                <h3 className="font-black text-xl text-white mb-1">{service.title}</h3>
-                                <p className="text-accent text-sm font-light max-w-xl">{service.description}</p>
+                                <h3 className="font-bold text-xl text-slate-900 mb-1 uppercase tracking-tight">{service.title}</h3>
+                                <p className="text-slate-400 text-sm font-medium max-w-xl line-clamp-1">{service.description}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => handleDelete(service.id)}
-                            className="text-white/20 hover:text-red-500 p-4 bg-white/5 rounded-2xl transition-all hover:bg-red-500/10"
-                        >
-                            <Trash2 size={24} />
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => handleEdit(service)}
+                                className="px-6 py-3 text-slate-400 hover:text-blue-600 font-bold uppercase tracking-widest text-[10px] bg-slate-50 rounded-xl border border-slate-100 transition-all"
+                            >
+                                Edit
+                            </button>
+                            <button
+                                onClick={() => handleDelete(service.id)}
+                                className="p-3 text-slate-300 hover:text-red-500 bg-slate-50 rounded-xl border border-slate-100 transition-all"
+                            >
+                                <Trash2 size={20} />
+                            </button>
+                        </div>
                     </div>
                 ))}
-                {services.length === 0 && !loading && <p className="text-center text-gray-500">No services found.</p>}
+                {services.length === 0 && !loading && <p className="text-center text-slate-300 font-bold uppercase tracking-widest py-24 bg-white rounded-[2.5rem] border border-dashed border-slate-200">No Modules Detected</p>}
             </div>
         </div>
     );

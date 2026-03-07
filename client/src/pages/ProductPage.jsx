@@ -2,9 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, ShieldCheck, Zap, Users, BarChart, ArrowRight } from 'lucide-react';
 
-import handshakeVideo from '../images/Antigravity_Hero_Handshake_Animation.mp4';
+import robotHandshakeVideo from '../images/Robot_and_Person_Hero_Animation.mp4';
+
+import RequestInviteForm from '../components/RequestInviteForm';
 
 const ProductPage = () => {
+    const [isInviteOpen, setIsInviteOpen] = React.useState(false);
     // Animation variants
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -47,6 +50,8 @@ const ProductPage = () => {
 
     return (
         <div className="min-h-screen bg-black pt-20 overflow-hidden font-sans selection:bg-primary/30">
+            <RequestInviteForm isOpen={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
+
             {/* Hero Section of Product */}
             <section className="relative min-h-[90vh] flex items-center justify-center py-20 px-4 sm:px-6 lg:px-8 overflow-hidden bg-black">
                 {/* Background Video */}
@@ -57,13 +62,13 @@ const ProductPage = () => {
                         muted
                         playsInline
                         preload="auto"
-                        className="w-full h-full object-cover opacity-60"
+                        className="w-full h-full object-cover opacity-75"
                         style={{
                             willChange: 'transform',
-                            filter: 'brightness(0.4) contrast(1.2) saturate(0.8)'
+                            filter: 'brightness(0.5) contrast(1.1) saturate(0.9)'
                         }}
                     >
-                        <source src={handshakeVideo} type="video/mp4" />
+                        <source src={robotHandshakeVideo} type="video/mp4" />
                     </video>
                     {/* Dark Overlay Layers for SaaS aesthetic */}
                     <div className="absolute inset-0 bg-black/40"></div>
@@ -106,15 +111,17 @@ const ProductPage = () => {
                         transition={{ duration: 0.6, delay: 0.6 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-6"
                     >
-                        <a
-                            href="#demo"
+                        <button
+                            onClick={() => setIsInviteOpen(true)}
                             className="w-full sm:w-auto px-10 py-5 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all duration-300 transform hover:scale-105 text-sm uppercase tracking-widest shadow-2xl shadow-white/5"
                         >
-                            Request Invite
-                        </a>
+                            Demo Request
+                        </button>
                         <a
-                            href="#features"
-                            className="w-full sm:w-auto px-10 py-5 border border-white/20 text-white font-bold rounded-full hover:bg-white/5 transition-all duration-300 text-sm uppercase tracking-widest backdrop-blur-md"
+                            href="https://crewmitra.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full sm:w-auto px-10 py-5 border border-white/20 text-white font-bold rounded-full hover:bg-white/5 transition-all duration-300 text-sm uppercase tracking-widest backdrop-blur-md text-center"
                         >
                             Explore Platform
                         </a>
@@ -123,7 +130,7 @@ const ProductPage = () => {
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-32 relative z-10 bg-black border-t border-white/5">
+            < section id="features" className="py-32 relative z-10 bg-black border-t border-white/5" >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -158,10 +165,10 @@ const ProductPage = () => {
                         ))}
                     </motion.div>
                 </div>
-            </section>
+            </section >
 
             {/* CTA Section */}
-            <section className="py-40 relative overflow-hidden bg-black border-t border-white/5">
+            < section className="py-40 relative overflow-hidden bg-black border-t border-white/5" >
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
@@ -175,14 +182,17 @@ const ProductPage = () => {
                         <p className="text-zinc-500 mb-14 text-xl md:text-2xl font-medium max-w-2xl mx-auto tracking-tight">Join modern contractors who manage their workforce with precision.</p>
 
                         <div className="flex flex-col sm:flex-row justify-center gap-6">
-                            <a href="mailto:contact.crew.mitra@gmail.com" className="px-12 py-6 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-3 active:scale-95 transform">
-                                Request Invite <ArrowRight className="h-4 w-4" />
-                            </a>
+                            <button
+                                onClick={() => setIsInviteOpen(true)}
+                                className="px-12 py-6 bg-white text-black font-black rounded-full hover:bg-zinc-200 transition-all uppercase tracking-widest text-sm shadow-xl flex items-center justify-center gap-3 active:scale-95 transform"
+                            >
+                                Demo Request <ArrowRight className="h-4 w-4" />
+                            </button>
                         </div>
                     </motion.div>
                 </div>
-            </section>
-        </div>
+            </section >
+        </div >
     );
 };
 

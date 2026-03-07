@@ -11,6 +11,24 @@ const Contact = () => {
         subject: '',
         message: '',
     });
+    const [contact, setContact] = useState({
+        email: 'shyamvertexpvt@gmail.com',
+        phone_1: '+91 87993-03431',
+        address: 'Vadodara, Gujarat'
+    });
+
+    React.useEffect(() => {
+        const fetchContact = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/contact-info`);
+                const data = await res.json();
+                if (data && data.email) setContact(data);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchContact();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -44,10 +62,10 @@ const Contact = () => {
     return (
         <section id="contact" className="py-28 bg-dark relative overflow-hidden">
             <div className="container mx-auto px-4">
-                <div className="text-center mb-20">
-                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Get In <span className="text-primary italic text-shadow-glow">Touch</span></h2>
-                    <div className="w-20 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
-                    <p className="mt-8 text-accent max-w-2xl mx-auto text-xl font-light leading-relaxed">
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Get In <span className="text-primary">Touch</span></h2>
+                    <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
+                    <p className="mt-8 text-white/50 max-w-2xl mx-auto text-xl font-normal leading-relaxed">
                         Ready to start your next project? Get in touch with us today.
                     </p>
                 </div>
@@ -56,15 +74,15 @@ const Contact = () => {
                     {/* Contact Info */}
                     <div>
                         <h3 className="text-3xl font-bold text-primary mb-8">Let's Connect</h3>
-                        <p className="text-accent text-lg mb-12 leading-relaxed font-light">
+                        <p className="text-white/40 text-lg mb-12 leading-relaxed font-normal">
                             Whether you have a question about our services, pricing, or just want to say hello, we'd love to hear from you.
                         </p>
 
                         <div className="space-y-10">
                             {[
-                                { icon: <Mail className="h-8 w-8 text-primary" />, title: 'Email Us', info: 'shyamvertexpvt@gmail.com', href: 'mailto:shyamvertexpvt@gmail.com', sub: 'Always online' },
-                                { icon: <Phone className="h-8 w-8 text-primary" />, title: 'Call Us', info: '+91 87993-03431', href: 'tel:+918799303431', sub: 'Mon-Sat 9am-8pm' },
-                                { icon: <MapPin className="h-8 w-8 text-primary" />, title: 'Visit Us', info: 'Vadodara, Gujarat', href: '#', sub: 'India - 390019' }
+                                { icon: <Mail className="h-6 w-6 text-primary" />, title: 'Email Us', info: contact.email, href: `mailto:${contact.email}`, sub: 'Always online' },
+                                { icon: <Phone className="h-6 w-6 text-primary" />, title: 'Call Us', info: contact.phone_1, href: `tel:${(contact.phone_1 || '').replace(/[^0-9+]/g, '')}`, sub: 'Mon-Sat 9am-8pm' },
+                                { icon: <MapPin className="h-6 w-6 text-primary" />, title: 'Visit Us', info: contact.address, href: '#', sub: 'India - 390019' }
                             ].map((item, index) => (
                                 <div key={index} className="flex items-center group transition-all duration-500">
                                     <div className="bg-charcoal p-5 rounded-2xl mr-6 border border-white/5 group-hover:border-primary/50 group-hover:bg-dark transition-all duration-300 shadow-xl group-hover:scale-110">

@@ -80,69 +80,83 @@ connection.connect((err) => {
                 `;
 
                 connection.query(createContactTable, (err) => {
-                    if (err) {
-                        console.error('Error creating contact_messages table:', err.message);
-                    } else {
-                        console.log('Table "contact_messages" created or already exists.');
-                    }
+                    if (err) console.error('Error:', err.message);
 
-                    // Add a sample service table if needed
+                    const createContactInfoTable = `
+                        CREATE TABLE IF NOT EXISTS contact_info (
+                            id INT PRIMARY KEY DEFAULT 1,
+                            email VARCHAR(255),
+                            phone_1 VARCHAR(20),
+                            phone_2 VARCHAR(20),
+                            address TEXT,
+                            instagram VARCHAR(255),
+                            linkedin VARCHAR(255)
+                        )
+                    `;
+                    connection.query(createContactInfoTable, (err) => {
+                        if (err) console.error('Error:', err.message);
+
+                        // Insert default settings
+                        connection.query("INSERT IGNORE INTO contact_info (id, email) VALUES (1, 'support@shyamvertex.com')");
+                    });
+
                     const createServicesTable = `
                         CREATE TABLE IF NOT EXISTS services(
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    title VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                `;
-
+                            id INT AUTO_INCREMENT PRIMARY KEY,
+                            title VARCHAR(255) NOT NULL,
+                            description TEXT,
+                            icon VARCHAR(50) DEFAULT 'Code',
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    `;
                     connection.query(createServicesTable, (err) => {
-                        if (err) {
-                            console.error('Error creating services table:', err.message);
-                        } else {
-                            console.log('Table "services" created or already exists.');
-                        }
+                        if (err) console.error('Error:', err.message);
+                        connection.query("ALTER TABLE services ADD COLUMN icon VARCHAR(50) DEFAULT 'Code'", (err) => { });
 
-                        // Create job_settings table
-                        const createJobSettingsTable = `
-                            CREATE TABLE IF NOT EXISTS job_settings (
-                                role_id VARCHAR(50) PRIMARY KEY,
-                                is_hiring BOOLEAN DEFAULT TRUE,
-                                label VARCHAR(100)
+                        const createBlogsTable = `
+                            CREATE TABLE IF NOT EXISTS blogs(
+                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                title VARCHAR(255) NOT NULL,
+                                excerpt TEXT,
+                                content LONGTEXT,
+                                author VARCHAR(100),
+                                date DATE,
+                                image VARCHAR(255),
+                                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                             )
                         `;
+                        connection.query(createBlogsTable, (err) => {
+                            if (err) console.error('Error:', err.message);
 
-                        connection.query(createJobSettingsTable, (err) => {
-                            if (err) {
-                                console.error('Error creating job_settings table:', err.message);
-                                connection.end();
-                            } else {
-                                console.log('Table "job_settings" created or already exists.');
-
-                                // Insert default values if they don't exist
-                                const defaultJobs = [
-                                    { role_id: 'fulltime', label: 'Full-time' },
-                                    { role_id: 'internship', label: 'Internship' },
-                                    { role_id: 'freelance', label: 'Freelance' }
-                                ];
-
-                                let completed = 0;
-                                defaultJobs.forEach(job => {
-                                    const insertQuery = `
-                                        INSERT IGNORE INTO job_settings (role_id, is_hiring, label)
-                                        VALUES (?, TRUE, ?)
-                                    `;
-                                    connection.query(insertQuery, [job.role_id, job.label], (err) => {
-                                        if (err) console.error(`Error inserting default job ${job.role_id}:`, err.message);
-
-                                        completed++;
-                                        if (completed === defaultJobs.length) {
-                                            console.log('Database setup completed successfully.');
-                                            connection.end();
-                                        }
+                            const createJobSettingsTable = `
+                                CREATE TABLE IF NOT EXISTS job_settings (
+                                    role_id VARCHAR(50) PRIMARY KEY,
+                                    is_hiring BOOLEAN DEFAULT TRUE,
+                                    label VARCHAR(100)
+                                )
+                            `;
+                            connection.query(createJobSettingsTable, (err) => {
+                                if (err) {
+                                    console.error('Error:', err.message);
+                                    connection.end();
+                                } else {
+                                    const defaultJobs = [
+                                        { role_id: 'fulltime', label: 'Full-time' },
+                                        { role_id: 'internship', label: 'Internship' },
+                                        { role_id: 'freelance', label: 'Freelance' }
+                                    ];
+                                    let completed = 0;
+                                    defaultJobs.forEach(job => {
+                                        connection.query(`INSERT IGNORE INTO job_settings (role_id, is_hiring, label) VALUES (?, TRUE, ?)`, [job.role_id, job.label], () => {
+                                            completed++;
+                                            if (completed === defaultJobs.length) {
+                                                console.log('Database setup completed.');
+                                                connection.end();
+                                            }
+                                        });
                                     });
-                                });
-                            }
+                                }
+                            });
                         });
                     });
                 });

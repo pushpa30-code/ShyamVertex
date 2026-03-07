@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 
 // Import images
 import ambitiousLogo from '../images/ambitious corporation logo.jpeg';
-import axiomLogo from '../images/axiom hitech logo.png';
 import badaBuilderLogo from '../images/bada builder logo.jpeg';
 
 const Partners = () => {
@@ -20,7 +19,7 @@ const Partners = () => {
     return (
         <section className="py-16 bg-dark border-b border-white/5 overflow-hidden">
             <div className="container mx-auto px-4 mb-8 text-center">
-                <p className="text-lg md:text-xl font-medium text-accent tracking-wide uppercase">
+                <p className="text-sm md:text-base font-bold text-accent uppercase tracking-widest">
                     Proudly Collaborating with Industry Leaders
                 </p>
             </div>

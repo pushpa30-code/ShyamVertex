@@ -86,9 +86,9 @@ const CareerPage = () => {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
-                        className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tight"
+                        className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight"
                     >
-                        Join Our <span className="text-primary italic">Team</span>
+                        Join Our <span className="text-primary">Team</span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0 }}
@@ -96,7 +96,7 @@ const CareerPage = () => {
                         transition={{ duration: 0.8, delay: 0.3 }}
                         className="text-xl text-accent max-w-3xl mx-auto font-light leading-relaxed"
                     >
-                        Explore opportunities to grow with ShyamVertex. We are looking for passionate individuals to join our journey.
+                        Explore opportunities to grow with <span className="font-bold text-white tracking-tight">Shyam<span className="text-primary">Vertex</span></span>. We are looking for passionate individuals to join our journey.
                     </motion.p>
                 </div>
 

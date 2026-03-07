@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import API_URL from '../../config';
 
 const AdminContact = () => {
-    const [settings, setSettings] = useState({
+    const [contact, setContact] = useState({
         email: '',
         phone_1: '',
         phone_2: '',
@@ -14,98 +14,124 @@ const AdminContact = () => {
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState('');
+    const [status, setStatus] = useState('');
 
     useEffect(() => {
-        fetchSettings();
+        fetchContactInfo();
     }, []);
 
-    const fetchSettings = async () => {
+    const fetchContactInfo = async () => {
         try {
             const res = await fetch(`${API_URL}/api/contact-info`);
             const data = await res.json();
-            if (data) setSettings(prev => ({ ...prev, ...data }));
-            setLoading(false);
+            setContact(prev => ({ ...prev, ...data }));
         } catch (err) {
-            console.error(err);
-            setLoading(false);
+            console.error('Error fetching contact info:', err);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
-        setMessage('');
+        setStatus('');
         try {
             const res = await fetch(`${API_URL}/api/contact-info`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
+                body: JSON.stringify(contact)
             });
             if (res.ok) {
-                setMessage('Contact information updated successfully!');
-                setTimeout(() => setMessage(''), 3000);
+                setStatus('Settings saved successfully');
+                setTimeout(() => setStatus(''), 3000);
+            } else {
+                setStatus('Error saving settings');
             }
         } catch (err) {
-            console.error(err);
-            setMessage('Error updating settings.');
+            console.error('Error saving contact info:', err);
+            setStatus('Connection error');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setSettings(prev => ({ ...prev, [name]: value }));
-    };
-
-    if (loading) return <div>Loading settings...</div>;
-
     return (
-        <div className="bg-charcoal p-8 rounded-[2rem] border border-white/5">
-            <h2 className="text-2xl font-black text-white mb-10 border-l-4 border-primary pl-4 uppercase tracking-tight">Contact Settings</h2>
+        <div className="max-w-4xl mx-auto space-y-8">
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex justify-between items-center">
+                <div className="space-y-1">
+                    <h2 className="text-2xl font-bold text-slate-900 uppercase tracking-tight">Contact <span className="text-blue-600">Settings</span></h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Update global contact information</p>
+                </div>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-10 max-w-4xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {[
-                        { label: 'Primary Support Email', name: 'email', type: 'email', value: settings.email },
-                        { label: 'Physical Headquarters', name: 'address', type: 'text', value: settings.address },
-                        { label: 'Primary Contact Line', name: 'phone_1', type: 'text', value: settings.phone_1 },
-                        { label: 'Secondary Contact Line', name: 'phone_2', type: 'text', value: settings.phone_2 },
-                        { label: 'Instagram Profile URL', name: 'instagram', type: 'url', value: settings.instagram },
-                        { label: 'LinkedIn Business Page', name: 'linkedin', type: 'url', value: settings.linkedin },
-                    ].map((field, idx) => (
-                        <div key={idx} className="space-y-3">
-                            <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] ml-1">{field.label}</label>
-                            <input
-                                type={field.type}
-                                name={field.name}
-                                value={field.value}
-                                onChange={handleChange}
-                                className="w-full px-6 py-4 bg-dark border border-white/10 rounded-2xl text-white placeholder-white/20 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold"
-                            />
-                        </div>
-                    ))}
+            <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-8 p-10 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Support Email</label>
+                        <input
+                            type="email"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            value={contact.email}
+                            onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number 1</label>
+                        <input
+                            type="text"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            value={contact.phone_1}
+                            onChange={(e) => setContact({ ...contact, phone_1: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number 2</label>
+                        <input
+                            type="text"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            value={contact.phone_2}
+                            onChange={(e) => setContact({ ...contact, phone_2: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-3 col-span-full">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Office Address</label>
+                        <textarea
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-medium h-24 resize-none"
+                            value={contact.address}
+                            onChange={(e) => setContact({ ...contact, address: e.target.value })}
+                        />
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-6 pt-6 border-t border-white/5">
+                <div className="grid md:grid-cols-2 gap-8 p-10 bg-white rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Instagram Profile</label>
+                        <input
+                            type="text"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            value={contact.instagram}
+                            onChange={(e) => setContact({ ...contact, instagram: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">LinkedIn Profile</label>
+                        <input
+                            type="text"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 outline-none focus:border-blue-500 focus:bg-white transition-all font-bold"
+                            value={contact.linkedin}
+                            onChange={(e) => setContact({ ...contact, linkedin: e.target.value })}
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-blue-50 border border-blue-100 rounded-3xl">
+                    <p className="text-xs font-black text-blue-700 px-4 uppercase tracking-widest">{status}</p>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center gap-3 bg-primary text-dark px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-yellow-glow shadow-2xl shadow-primary/20 transition-all disabled:opacity-50"
+                        className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50"
                     >
-                        {saving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
-                        Save Changes
+                        {saving ? 'Syncing...' : 'Save Configuration'}
                     </button>
-                    {message && (
-                        <motion.span
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className={`text-xs font-bold uppercase tracking-widest ${message.includes('Error') ? 'text-red-400' : 'text-primary'}`}
-                        >
-                            {message}
-                        </motion.span>
-                    )}
                 </div>
             </form>
         </div>
