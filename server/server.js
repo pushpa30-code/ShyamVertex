@@ -32,11 +32,12 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true
 }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads')); // Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 // Global Error Handlers to prevent server crash in production
 process.on('uncaughtException', (err) => {
@@ -188,18 +189,27 @@ db.connect((err) => {
 // Using hardcoded key for immediate testing, but prefer env var in production
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dQ6fGyYM_LgUUnQ8Rgk8ud9UYfii5m9F8');
 
-// Routes
+// Diagnostic Routes
 app.get('/', (req, res) => {
-    res.send('Shyam Vertex API is running');
+    res.json({
+        status: 'online',
+        message: 'SHYAM VERTEX PRODUCTION API',
+        version: '1.2.0',
+        db_connected: dbConnected
+    });
 });
 
-// ... (skipping contact form route for brevity, focus on apply route)
-
-
-
-// Routes
-app.get('/', (req, res) => {
-    res.send('Shyam Vertex API is running');
+app.get('/api/debug-status', (req, res) => {
+    res.json({
+        env_vars: {
+            NODE_ENV: process.env.NODE_ENV,
+            PORT: process.env.PORT,
+            MYSQLHOST: !!process.env.MYSQLHOST,
+            MYSQL_HOST: !!process.env.MYSQL_HOST
+        },
+        db_connected: dbConnected,
+        mock_data_count: mockJobSettings.length
+    });
 });
 
 // Contact Form Submission Route
